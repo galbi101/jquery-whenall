@@ -1,0 +1,76 @@
+/**
+ * Created by galbi on 5/6/2016.
+ */
+(function(factory) {
+	if ( typeof define === "function" && define.amd ) {
+		// AMD. Register as an anonymous module.
+		define(["jquery"], factory);
+	}
+	else {
+		// Browser globals
+		factory(jQuery);
+	}
+}(function($) {
+	$.whenAll = function() {
+		var masterDeferred = $.Deferred(),
+			deferreds = [],
+			progressDeferreds = [],
+			allDone = false,
+			initialProgress = true,
+			hasRejected = false;
+		$.each(arguments, function(i, promise) {
+			var deferred = $.Deferred();
+			var progressDeferred = $.Deferred();
+			if (promise && promise.then) {
+				promise.fail(function() {
+					hasRejected = true;
+				}).always(function() {
+					deferred.resolve.apply(deferred, arguments);
+					progressDeferred.__latestArgs__ = arguments;
+					progressDeferred.resolve.apply(progressDeferred, arguments);
+				}).progress(function() {
+					!initialProgress && masterDeferred.notify.apply(masterDeferred, arguments);
+					progressDeferred.__latestArgs__ = arguments;
+					progressDeferred.resolve.apply(progressDeferred, arguments);
+				});
+			}
+			else {
+				deferred.resolve(promise);
+				progressDeferred.resolve(promise);
+			}
+			deferreds.push(deferred);
+			progressDeferreds.push(progressDeferred);
+		});
+		/*
+		 when at least one of the promises has "progressed", while
+		 all the others are resolved/rejected - the returned master promise
+		 is notifying a "progress".
+		 For each further "progress" notification coming from the unsettled promises, a further notification will be 
+		 */
+		$.when.apply($, progressDeferreds).done(function() {
+			if (!allDone) {
+				masterDeferred.notify.apply(
+					masterDeferred,
+					progressDeferreds.length > 1 ?
+						$.makeArray(progressDeferreds).map(function(progressDeferred) {
+							return progressDeferred.__latestArgs__.length > 1 ?
+								$.makeArray(progressDeferred.__latestArgs__)
+								: (progressDeferred.__latestArgs__.length == 1 ? progressDeferred.__latestArgs__[0] : void 0);
+						})
+						: arguments
+				);
+				initialProgress = false;
+			}
+		});
+		/*
+		 when all the promises are in final state (resolved/rejected) - if even
+		 one of the promises is rejected, the returned master promise is rejected iff one or more of the promises are rejected.
+		 otherwise, it's resolved.
+		 */
+		$.when.apply($, deferreds).done(function() {
+			allDone = true;
+			masterDeferred[hasRejected ? 'reject' : 'resolve'].apply(masterDeferred, arguments);
+		});
+		return masterDeferred.promise();
+	};
+}));
