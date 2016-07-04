@@ -1,0 +1,27 @@
+{
+	"name": "jquery-whenall",
+	"version": "0.1.0",
+	"dependencies": {
+		"jquery": ">=1.7"
+	},
+	"description": "A patient version of jQuery.when() that waits for all its input promises to have a final state before resolving/rejecting the composite returned promise. Also supports 'progress' notifications.",
+	"main": "jquery.whenall.js",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git://github.com/galbi101/jquery-whenall.git"
+	},
+	"keywords": [
+		"jquery",
+		"jquery-plugin",
+		"when",
+		"promise",
+		"promises",
+		"progress",
+		"whenall"
+	],
+	"bugs": {
+		"url": "https://github.com/galbi101/jquery-whenall/issues"
+	},
+	"homepage": "https://github.com/galbi101/jquery-whenall"
+}
