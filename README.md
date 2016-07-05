@@ -15,16 +15,22 @@ $.whenAll(promise1, promise2) // promise3, ...
 		// Called when all promises are resolved
 	})
 	.fail(function() {
-		// Called when all promises have a final state (resolved/rejected), and at least one of them is rejected
+		/*
+		 Called when all promises have a final state (resolved/rejected),
+		 and at least one of them is rejected.
+		 */
 	})
 	.always(function() {
 		// Called when all promises have a final state (resolved/rejected)
 	})
 	.progress(function() {
 		/*
-		 Initially called when all promises are either resolved/rejected/notified a "progress" by deferred.notify().
-		 After that, this callback will continue to be invoked for each individual pending promise "progress" notification,
-		 until all of them are finalized.
+		 Initially called when at least one promise notified a "progress"
+		 by deferred.notify(), and all other promises are either
+		 resolved/rejected/progressed.
+		 After that, this callback will continue to be invoked for each
+		 individual pending promise "progress" notification, until all
+		 of them are finalized.
 		 */
 	});
 ```

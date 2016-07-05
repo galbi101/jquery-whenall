@@ -1,6 +1,6 @@
 {
 	"name": "jquery-whenall",
-	"version": "0.1.0",
+	"version": "0.1.2",
 	"dependencies": {
 		"jquery": ">=1.7"
 	},
@@ -18,7 +18,8 @@
 		"promise",
 		"promises",
 		"progress",
-		"whenall"
+		"whenall",
+		"when all"
 	],
 	"bugs": {
 		"url": "https://github.com/galbi101/jquery-whenall/issues"
