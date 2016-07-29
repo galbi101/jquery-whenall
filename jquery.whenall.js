@@ -15,24 +15,41 @@
 		var masterDeferred = $.Deferred(),
 			deferreds = [],
 			progressDeferreds = [],
-			allDone = false,
+			allFulfilled = false,
 			initialProgress = true,
 			hasRejected = false;
 		$.each(arguments, function(i, promise) {
 			var deferred = $.Deferred();
 			var progressDeferred = $.Deferred();
 			if (promise && promise.then) {
-				promise.fail(function() {
-					hasRejected = true;
-				}).always(function() {
+				var afterFulfillment = function() {
 					deferred.resolve.apply(deferred, arguments);
-					progressDeferred.__latestArgs__ = arguments;
-					progressDeferred.resolve.apply(progressDeferred, arguments);
-				}).progress(function() {
-					!initialProgress && masterDeferred.notify.apply(masterDeferred, arguments);
-					progressDeferred.__latestArgs__ = arguments;
-					progressDeferred.resolve.apply(progressDeferred, arguments);
-				});
+					if (initialProgress) {
+						progressDeferred.__latestArgs__ = arguments;
+						progressDeferred.resolve.apply(progressDeferred, arguments);
+					}
+				};
+				promise.then(
+					// done
+					afterFulfillment,
+					// fail
+					function() {
+						hasRejected = true;
+						afterFulfillment.apply(this, arguments);
+					},
+					// progress
+					function() {
+						// if progress received while there are still promises who aren't fulfilled/progressed
+						if (initialProgress) {
+							progressDeferred.__latestArgs__ = arguments;
+							progressDeferred.resolve.apply(progressDeferred, arguments);
+						}
+						// if all promises are either fulfilled or progressed
+						else {
+							masterDeferred.notify.apply(masterDeferred, arguments);
+						}
+					}
+				);
 			}
 			else {
 				deferred.resolve(promise);
@@ -45,10 +62,11 @@
 		 when at least one of the promises has "progressed", while
 		 all the others are resolved/rejected - the returned master promise
 		 is notifying a "progress".
-		 For each further "progress" notification coming from the unsettled promises, a further notification will be 
+		 For each further "progress" notification coming from the unsettled promises, a further notification will be
+		 called on the master promise.
 		 */
 		$.when.apply($, progressDeferreds).done(function() {
-			if (!allDone) {
+			if (!allFulfilled) {
 				masterDeferred.notify.apply(
 					masterDeferred,
 					progressDeferreds.length > 1 ?
@@ -68,7 +86,7 @@
 		 otherwise, it's resolved.
 		 */
 		$.when.apply($, deferreds).done(function() {
-			allDone = true;
+			allFulfilled = true;
 			masterDeferred[hasRejected ? 'reject' : 'resolve'].apply(masterDeferred, arguments);
 		});
 		return masterDeferred.promise();
