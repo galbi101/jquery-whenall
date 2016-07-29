@@ -7,6 +7,12 @@ to have a final state, either resolved or rejected, before finalizing the return
 The function also supports the unique jQuery Deferred `progress` notifications and implements its own notifying rules
 for the returned promise (see the respective comment in [Usage](#usage)).
 
+## Installation
+
+```sh
+$ npm install jquery-whenall
+```
+
 ## Usage
 
 ```js
