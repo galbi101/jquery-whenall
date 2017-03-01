@@ -17,6 +17,18 @@
 			progressDeferreds = [],
 			allFulfilled = false,
 			initialProgress = true,
+			notifyMasterDeferred = function() {
+				masterDeferred.notify.apply(
+					masterDeferred,
+					progressDeferreds.length > 1 ?
+						$.makeArray(progressDeferreds).map(function(progressDeferred) {
+							return progressDeferred.__latestArgs__.length > 1 ?
+								$.makeArray(progressDeferred.__latestArgs__)
+								: (progressDeferred.__latestArgs__.length == 1 ? progressDeferred.__latestArgs__[0] : void 0);
+						})
+						: arguments
+				);
+			},
 			hasRejected = false;
 		$.each(arguments, function(i, promise) {
 			var deferred = $.Deferred();
@@ -40,23 +52,33 @@
 					// progress
 					function() {
 						// if progress received while there are still promises who aren't fulfilled/progressed
+						progressDeferred.__latestArgs__ = arguments;
 						if (initialProgress) {
-							progressDeferred.__latestArgs__ = arguments;
 							progressDeferred.resolve.apply(progressDeferred, arguments);
 						}
 						// if all promises are either fulfilled or progressed
 						else {
-							masterDeferred.notify.apply(masterDeferred, arguments);
+							notifyMasterDeferred.apply(null, arguments);
 						}
 					}
 				);
 			}
 			else {
 				deferred.resolve(promise);
+				progressDeferred.__latestArgs__ = [promise];
 				progressDeferred.resolve(promise);
 			}
 			deferreds.push(deferred);
 			progressDeferreds.push(progressDeferred);
+		});
+		/*
+		 when all the promises are in final state (resolved/rejected) - if even
+		 one of the promises is rejected, the returned master promise is rejected iff one or more of the promises are rejected.
+		 otherwise, it's resolved.
+		 */
+		$.when.apply($, deferreds).done(function() {
+			allFulfilled = true;
+			masterDeferred[hasRejected ? 'reject' : 'resolve'].apply(masterDeferred, arguments);
 		});
 		/*
 		 when at least one of the promises has "progressed", while
@@ -67,27 +89,9 @@
 		 */
 		$.when.apply($, progressDeferreds).done(function() {
 			if (!allFulfilled) {
-				masterDeferred.notify.apply(
-					masterDeferred,
-					progressDeferreds.length > 1 ?
-						$.makeArray(progressDeferreds).map(function(progressDeferred) {
-							return progressDeferred.__latestArgs__.length > 1 ?
-								$.makeArray(progressDeferred.__latestArgs__)
-								: (progressDeferred.__latestArgs__.length == 1 ? progressDeferred.__latestArgs__[0] : void 0);
-						})
-						: arguments
-				);
+				notifyMasterDeferred.apply(null, arguments);
 				initialProgress = false;
 			}
-		});
-		/*
-		 when all the promises are in final state (resolved/rejected) - if even
-		 one of the promises is rejected, the returned master promise is rejected iff one or more of the promises are rejected.
-		 otherwise, it's resolved.
-		 */
-		$.when.apply($, deferreds).done(function() {
-			allFulfilled = true;
-			masterDeferred[hasRejected ? 'reject' : 'resolve'].apply(masterDeferred, arguments);
 		});
 		return masterDeferred.promise();
 	};
